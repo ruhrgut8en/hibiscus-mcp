@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<plugin xmlns="http://www.willuhn.de/schema/jameica-plugin"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.willuhn.de/schema/jameica-plugin https://www.willuhn.de/schema/jameica-plugin-1.5.xsd"
+        name="hibiscus.mcp" version="0.1.0" class="net.hibiscusmcp.Plugin">
+
+  <description>MCP-Server fuer Hibiscus: lesender Zugriff auf Konten und Umsaetze, nur mit befristetem Token</description>
+  <url>https://raw.githubusercontent.com/ruhrgut8en/hibiscus-mcp/main/hibiscus.mcp/hibiscus.mcp.zip</url>
+  <homepage>https://github.com/ruhrgut8en/hibiscus-mcp</homepage>
+  <license>GPL - http://www.gnu.org/copyleft/gpl.html</license>
+
+  <requires jameica="2.10.0+">
+    <import plugin="hibiscus" version="2.10.0+"/>
+  </requires>
+
+  <classfinder>
+    <include>hibiscus\.mcp\.jar</include>
+    <include>.*\.class</include>
+  </classfinder>
+</plugin>

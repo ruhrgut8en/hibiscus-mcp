@@ -1,0 +1,39 @@
+#!/bin/sh
+# Stellt zeitlich begrenzte Zugangstokens für das Plugin hibiscus.mcp aus.
+# Gespeichert wird nur der SHA-256-Wert mit Ablaufzeit; das Token selbst erscheint genau einmal.
+# Tokendatei: Umgebungsvariable HIBISCUS_MCP_TOKEN_FILE, sonst ~/.jameica/hibiscus.mcp/tokens
+set -eu
+FILE="${HIBISCUS_MCP_TOKEN_FILE:-$HOME/.jameica/hibiscus.mcp/tokens}"
+DIR=$(dirname "$FILE")
+MAX_MIN=1440
+umask 077
+mkdir -p "$DIR"
+[ -e "$FILE" ] || : > "$FILE"
+now=$(date +%s)
+write() {  # ersetzt die Datei in einem Schritt und behält Eigentümer und Rechte des Ordners
+  tmp=$(mktemp "$DIR/.tokens.XXXXXX")
+  cat > "$tmp"
+  chown "$(stat -c %u:%g "$DIR")" "$tmp" 2>/dev/null || true
+  chmod 0600 "$tmp"
+  mv "$tmp" "$FILE"
+}
+case "${1:-}" in
+  neu)
+    min="${2:-60}"
+    case "$min" in ''|*[!0-9]*) echo "Minuten als Zahl angeben." >&2; exit 2 ;; esac
+    [ "$min" -ge 1 ] && [ "$min" -le "$MAX_MIN" ] || { echo "Erlaubt sind 1 bis $MAX_MIN Minuten." >&2; exit 2; }
+    label=$(printf '%s' "${3:-token}" | tr -cd 'A-Za-z0-9._-' | cut -c1-40); [ -n "$label" ] || label=token
+    token=$(openssl rand -hex 32)
+    hash=$(printf '%s' "$token" | sha256sum | cut -d' ' -f1)
+    exp=$((now + min * 60))
+    { awk -v n="$now" '$2>n' "$FILE"; echo "$hash $exp $label"; } | write
+    echo "Token ($label), gültig $min Minuten:" >&2
+    echo "$token" ;;
+  liste)
+    awk -v n="$now" '$2>n {printf "%s  noch %d min  (Kennung %s...)\n", $3, ($2-n)/60, substr($1,1,8)}' "$FILE"
+    echo "Gültige Tokens: $(awk -v n="$now" '$2>n' "$FILE" | wc -l)" ;;
+  widerrufen)
+    : | write
+    echo "Alle Tokens widerrufen." ;;
+  *) echo "Aufruf: mcp-token {neu [Minuten 1-$MAX_MIN, Standard 60] [Bezeichnung] | liste | widerrufen}" >&2; exit 2 ;;
+esac
